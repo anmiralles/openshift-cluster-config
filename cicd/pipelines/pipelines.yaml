@@ -1,7 +1,7 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: fruits-api-pr-pipeline-pvc
+  name: getting-started-pr-pipeline-pvc
   namespace: cicd
 spec:
   accessModes:
@@ -14,7 +14,7 @@ spec:
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: fruits-api-pr-pipeline
+  name: getting-started-pr-pipeline
   namespace: cicd
 spec:
   workspaces:
@@ -28,7 +28,7 @@ spec:
     - name: git-clone
       params:
         - name: url
-          value: 'https://github.com/anmiralles/quarkus-fruits-api.git'
+          value: 'https://github.com/anmiralles/quarkus-getting-started.git'
         - name: revision
           value: $(params.git-revision)
         - name: submodules
@@ -57,7 +57,7 @@ spec:
           value: 'false'
         - name: IMAGE
           value: >-
-            quay.io/rh-ee-amiralle/quarkus-fruits-api:$(tasks.git-clone.results.commit)
+            quay.io/rh-ee-amiralle/quarkus-getting-started:$(tasks.git-clone.results.commit)
       runAfter:
         - git-clone
       taskRef:
@@ -72,4 +72,3 @@ spec:
       workspaces:
         - name: source
           workspace: source-dir
----

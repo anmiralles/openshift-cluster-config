@@ -1,28 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
-kind: ArgoCD
-metadata:
-  name: argocd-all-namespaces
-spec:
-  sourceNamespaces:
-    - '*'
----
-apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: fruits-api-preview
+  name: getting-started-preview
 spec:
   generators:
     - pullRequest:
         github:
           owner: anmiralles
-          repo: quarkus-fruits-api
+          repo: quarkus-getting-started
           tokenRef:
             key: token
             secretName: github-token
         requeueAfterSeconds: 60
   template:
     metadata:
-      name: 'fruits-api-{{branch}}-{{number}}'
+      name: 'getting-started-{{branch}}-{{number}}'
     spec:
       destination:
         namespace: 'preview-{{branch}}'
@@ -39,9 +31,9 @@ spec:
             - name: version
               value: '{{head_sha}}'
             - name: image
-              value: quarkus-fruits-api
+              value: quarkus-getting-started
             - name: name
-              value: fruits-api
+              value: getting-started
       syncPolicy:
         automated:
           selfHeal: true

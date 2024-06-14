@@ -1,7 +1,7 @@
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
-  name: quarkus-fruits-api-tt
+  name: quarkus-getting-started-tt
   namespace: cicd
 spec:
   params:
@@ -14,23 +14,23 @@ spec:
     - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun
       metadata:
-        generateName: quarkus-fruits-api-pipeline-run-
+        generateName: quarkus-getting-started-pipeline-run-
       spec:
         params:
           - name: git-revision
             value: $(tt.params.git-revision)
         pipelineRef:
-          name: fruits-api-pr-pipeline
+          name: getting-started-pr-pipeline
         serviceAccountName: pipeline
         workspaces:
           - name: source-dir
             persistentVolumeClaim:
-              claimName: fruits-api-pr-pipeline-pvc
+              claimName: getting-started-pr-pipeline-pvc
 ---
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: EventListener
 metadata:
-  name: quarkus-fruits-api
+  name: quarkus-getting-started
   namespace: cicd
 spec:
   serviceAccountName: pipeline
@@ -40,24 +40,24 @@ spec:
           ref: github-push
       name: trigger-1
       template:
-        ref: quarkus-fruits-api-tt
+        ref: quarkus-getting-started-tt
 ---
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
-  name: el-quarkus-fruits-api
+  name: el-quarkus-getting-started
   namespace: cicd
   labels:
     app.kubernetes.io/instance: cicd-config
     app.kubernetes.io/managed-by: EventListener
     app.kubernetes.io/part-of: Triggers
-    eventlistener: quarkus-fruits-api
+    eventlistener: quarkus-getting-started
   annotations:
     openshift.io/host.generated: 'true'
 spec:
   to:
     kind: Service
-    name: el-quarkus-fruits-api
+    name: el-quarkus-getting-started
     weight: 100
   port:
     targetPort: http-listener
