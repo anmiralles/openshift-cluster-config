@@ -1,0 +1,64 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: quarkus-fruits-api-tt
+  namespace: cicd
+spec:
+  params:
+    - default: s2i
+      description: The git revision
+      name: git-revision
+    - description: The git repository url
+      name: git-repo-url
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: quarkus-fruits-api-pipeline-run-
+      spec:
+        params:
+          - name: git-revision
+            value: $(tt.params.git-revision)
+        pipelineRef:
+          name: fruits-api-pr-pipeline
+        serviceAccountName: pipeline
+        workspaces:
+          - name: source-dir
+            persistentVolumeClaim:
+              claimName: fruits-api-pr-pipeline-pvc
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: quarkus-fruits-api
+  namespace: cicd
+spec:
+  serviceAccountName: pipeline
+  triggers:
+    - bindings:
+        - kind: ClusterTriggerBinding
+          ref: github-push
+      name: trigger-1
+      template:
+        ref: quarkus-fruits-api-tt
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: el-quarkus-fruits-api
+  namespace: cicd
+  labels:
+    app.kubernetes.io/instance: cicd-config
+    app.kubernetes.io/managed-by: EventListener
+    app.kubernetes.io/part-of: Triggers
+    eventlistener: quarkus-fruits-api
+  annotations:
+    openshift.io/host.generated: 'true'
+spec:
+  to:
+    kind: Service
+    name: el-quarkus-fruits-api
+    weight: 100
+  port:
+    targetPort: http-listener
+  wildcardPolicy: None

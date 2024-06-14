@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ArgoCD
+metadata:
+  name: argocd-all-namespaces
+spec:
+  sourceNamespaces:
+    - '*'
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: fruits-api-preview
+spec:
+  generators:
+    - pullRequest:
+        github:
+          owner: anmiralles
+          repo: quarkus-fruits-api
+          tokenRef:
+            key: token
+            secretName: github-token
+        requeueAfterSeconds: 60
+  template:
+    metadata:
+      name: 'fruits-api-{{branch}}-{{number}}'
+    spec:
+      destination:
+        namespace: 'preview-{{branch}}'
+        server: 'https://kubernetes.default.svc'
+      project: default
+      source:
+        path: preview/
+        repoURL: 'https://github.com/anmiralles/openshift-cluster-config.git'
+        targetRevision: HEAD
+        helm:
+          parameters:
+            - name: namespace
+              value: 'preview-{{branch}}'
+            - name: version
+              value: '{{head_sha}}'
+            - name: image
+              value: quarkus-fruits-api
+            - name: name
+              value: fruits-api
+      syncPolicy:
+        automated:
+          selfHeal: true

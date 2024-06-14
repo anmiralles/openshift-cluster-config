@@ -1,0 +1,75 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: fruits-api-pr-pipeline-pvc
+  namespace: cicd
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  volumeMode: Filesystem
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: fruits-api-pr-pipeline
+  namespace: cicd
+spec:
+  workspaces:
+  - name: source-dir
+  params:
+    - description: branch
+      name: git-revision
+      type: string
+      default: s2i
+  tasks:
+    - name: git-clone
+      params:
+        - name: url
+          value: 'https://github.com/anmiralles/quarkus-fruits-api.git'
+        - name: revision
+          value: $(params.git-revision)
+        - name: submodules
+          value: 'true'
+        - name: depth
+          value: '1'
+        - name: sslVerify
+          value: 'false'
+        - name: deleteExisting
+          value: 'true'
+        - name: verbose
+          value: 'true'
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: source-dir
+    - name: s2i-java-preview
+      params:
+        - name: PATH_CONTEXT
+          value: .
+        - name: TLSVERIFY
+          value: 'false'
+        - name: MAVEN_CLEAR_REPO
+          value: 'false'
+        - name: IMAGE
+          value: >-
+            quay.io/rh-ee-amiralle/quarkus-fruits-api:$(tasks.git-clone.results.commit)
+      runAfter:
+        - git-clone
+      taskRef:
+        kind: ClusterTask
+        name: s2i-java
+      when:
+        - input: $(params.git-revision)
+          operator: notin
+          values:
+            - master
+            - s2i
+      workspaces:
+        - name: source
+          workspace: source-dir
+---
