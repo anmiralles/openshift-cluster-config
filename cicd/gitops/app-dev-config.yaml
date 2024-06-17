@@ -2,17 +2,17 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: quarkus-getting-started-dev
-  namespace: cicd
+  namespace: openshift-gitops
   annotations: 
     argocd-image-updater.argoproj.io/image-list: quay.io/rh-ee-amiralle/quarkus-getting-started
 spec:
   destination:
-    namespace: apps
+    namespace: test
     server: https://kubernetes.default.svc
   project: default
   source:
     path: helm
-    repoURL: https://github.com/piomin/quarkus-getting-started
+    repoURL: https://github.com/anmiralles/quarkus-getting-started
     targetRevision: HEAD
     helm:
       valueFiles:

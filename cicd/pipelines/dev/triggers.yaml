@@ -1,3 +1,41 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: Trigger
+metadata:
+  name: development-trigger
+  namespace: cicd
+spec:
+  serviceAccountName: pipeline
+  interceptors:
+    - ref:
+        name: "github"
+      params:
+        - name: "secretRef"
+          value:
+            secretName: github-secret
+            secretKey: secretToken
+        - name: "eventTypes"
+          value: ["push"]
+  bindings:
+    - ref: development-tb
+  template:
+    ref: development-tt
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: development-tb
+  namespace: cicd
+spec:
+  params:
+  - name: git-repo-url
+    value: $(body.repository.url)
+  - name: git-repo-name
+    value: $(body.repository.name)
+  - name: git-revision
+    value: $(body.head_commit.id)
+  - name: git-commit-message
+    value: $(body.head_commit.message)
+---
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
@@ -5,27 +43,38 @@ metadata:
   namespace: cicd
 spec:
   params:
-    - default: s2i
-      description: The git revision
-      name: git-revision
-    - description: The git repository url
-      name: git-repo-url
+  - name: git-repo-url
+    description: The git repository url
+  - name: git-revision
+    description: The git revision
+    default: main
+  - name: git-repo-name
+    description: The name of the deployment to be created / patched
   resourcetemplates:
-    - apiVersion: tekton.dev/v1beta1
-      kind: PipelineRun
-      metadata:
-        generateName: development-pipeline-run-
-      spec:
-        params:
-          - name: git-revision
-            value: $(tt.params.git-revision)
-        pipelineRef:
-          name: development-pipeline
-        serviceAccountName: pipeline
-        workspaces:
-          - name: source-dir
-            persistentVolumeClaim:
-              claimName: development-pipeline-pvc
+  - apiVersion: tekton.dev/v1beta1
+    kind: PipelineRun
+    metadata:
+      generateName: build-deploy-$(tt.params.git-repo-name)-
+    spec:
+      serviceAccountName: pipeline
+      pipelineRef:
+        name: development-pipeline
+      params:
+      - name: app-name
+        value: $(tt.params.git-repo-name)
+      - name: git-url
+        value: $(tt.params.git-repo-url)
+      - name: git-revision
+        value: $(tt.params.git-revision)
+      - name: image
+        value: quay.io/rh-ee-amiralle/$(tt.params.git-repo-name)
+      workspaces:
+      - name: shared-workspace
+        persistentVolumeClaim:
+          claimName: development-pipeline-pvc
+      - name: dockerconfig
+        secret:
+          secretName: quay-secret
 ---
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: EventListener
@@ -45,7 +94,7 @@ spec:
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
-  name: el-development
+  name: el-development-route
   namespace: cicd
   labels:
     app.kubernetes.io/instance: cicd-config
