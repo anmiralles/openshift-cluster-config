@@ -1,7 +1,7 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: getting-started-pr-pipeline-pvc
+  name: preview-pipeline-pvc
   namespace: cicd
 spec:
   accessModes:
@@ -14,7 +14,7 @@ spec:
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: getting-started-pr-pipeline
+  name: preview-pipeline
   namespace: cicd
 spec:
   workspaces:

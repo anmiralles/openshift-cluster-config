@@ -47,16 +47,16 @@ spec:
         server: 'https://kubernetes.default.svc'
       project: default
       source:
-        path: preview/
-        repoURL: 'https://github.com/anmiralles/openshift-cluster-config.git'
+        path: helm/
+        repoURL: 'https://github.com/anmiralles/quarkus-getting-started.git'
         targetRevision: HEAD
         helm:
           parameters:
             - name: namespace
               value: 'preview-{{branch}}'
-            - name: version
+            - name: image.tag
               value: '{{head_sha}}'
-            - name: image
+            - name: image.name
               value: quarkus-getting-started
             - name: name
               value: getting-started

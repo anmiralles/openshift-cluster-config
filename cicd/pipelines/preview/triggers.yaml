@@ -1,0 +1,64 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: preview-tt
+  namespace: cicd
+spec:
+  params:
+    - default: s2i
+      description: The git revision
+      name: git-revision
+    - description: The git repository url
+      name: git-repo-url
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: preview-pipeline-run-
+      spec:
+        params:
+          - name: git-revision
+            value: $(tt.params.git-revision)
+        pipelineRef:
+          name: preview-pipeline
+        serviceAccountName: pipeline
+        workspaces:
+          - name: source-dir
+            persistentVolumeClaim:
+              claimName: preview-pipeline-pvc
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: preview-el
+  namespace: cicd
+spec:
+  serviceAccountName: pipeline
+  triggers:
+    - bindings:
+        - kind: ClusterTriggerBinding
+          ref: github-push
+      name: trigger-1
+      template:
+        ref: preview-tt
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: el-preview-route
+  namespace: cicd
+  labels:
+    app.kubernetes.io/instance: cicd-config
+    app.kubernetes.io/managed-by: EventListener
+    app.kubernetes.io/part-of: Triggers
+    eventlistener: preview-el
+  annotations:
+    openshift.io/host.generated: 'true'
+spec:
+  to:
+    kind: Service
+    name: el-preview-el
+    weight: 100
+  port:
+    targetPort: http-listener
+  wildcardPolicy: None

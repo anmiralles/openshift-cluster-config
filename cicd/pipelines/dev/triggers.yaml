@@ -1,7 +1,7 @@
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
-  name: quarkus-getting-started-tt
+  name: development-tt
   namespace: cicd
 spec:
   params:
@@ -14,23 +14,23 @@ spec:
     - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun
       metadata:
-        generateName: quarkus-getting-started-pipeline-run-
+        generateName: development-pipeline-run-
       spec:
         params:
           - name: git-revision
             value: $(tt.params.git-revision)
         pipelineRef:
-          name: getting-started-pr-pipeline
+          name: development-pipeline
         serviceAccountName: pipeline
         workspaces:
           - name: source-dir
             persistentVolumeClaim:
-              claimName: getting-started-pr-pipeline-pvc
+              claimName: development-pipeline-pvc
 ---
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: EventListener
 metadata:
-  name: quarkus-getting-started
+  name: development-el
   namespace: cicd
 spec:
   serviceAccountName: pipeline
@@ -38,26 +38,26 @@ spec:
     - bindings:
         - kind: ClusterTriggerBinding
           ref: github-push
-      name: trigger-1
+      name: trigger-2
       template:
-        ref: quarkus-getting-started-tt
+        ref: development-tt
 ---
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
-  name: el-quarkus-getting-started
+  name: el-development
   namespace: cicd
   labels:
     app.kubernetes.io/instance: cicd-config
     app.kubernetes.io/managed-by: EventListener
     app.kubernetes.io/part-of: Triggers
-    eventlistener: quarkus-getting-started
+    eventlistener: development-el
   annotations:
     openshift.io/host.generated: 'true'
 spec:
   to:
     kind: Service
-    name: el-quarkus-getting-started
+    name: el-development-el
     weight: 100
   port:
     targetPort: http-listener

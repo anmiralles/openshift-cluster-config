@@ -1,0 +1,89 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: development-pipeline-pvc
+  namespace: cicd
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  volumeMode: Filesystem
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: development-pipeline
+spec:
+  workspaces:
+  - name: shared-workspace
+  - name: dockerconfig
+  params:
+  - name: app-name
+  - name: git-url
+  - name: git-revision
+    default: main
+  - name: image
+  tasks:
+  # 1. Git Clone
+    - name: git-clone
+      taskRef:
+        name: git-clone
+        kind: ClusterTask
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
+  # 2. Maven Build
+    - name: mvn-build
+      taskRef:
+        name: mvn-build
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      runAfter:
+        - git-clone
+  # 3. Sonar Scan
+    - name: sonar-scan
+      taskRef:
+        kind: Task
+        name: sonar-scan
+      params:
+        - name: app-name
+          value: $(params.app-name)
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      runAfter:
+        - mvn-build
+  # 4. Get Version Number
+    - name: mvn-get-version
+      taskRef:
+        kind: Task
+        name: mvn-get-version
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      runAfter:
+        - sonar-scan
+  # 5. Build and Push Image
+    - name: buildah
+      taskRef:
+        kind: ClusterTask
+        name: buildah
+      params:
+        - name: IMAGE
+          value: >-
+            $(params.image):$(tasks.mvn-get-version.results.version)
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+        - name: dockerconfig
+          workspace: dockerconfig
+      runAfter:
+        - mvn-get-version
