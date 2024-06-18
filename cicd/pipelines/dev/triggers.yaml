@@ -74,7 +74,7 @@ spec:
           claimName: development-pipeline-pvc
       - name: dockerconfig
         secret:
-          secretName: quay-reg-secret
+          secretName: docker-secret-config
 ---
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: EventListener
