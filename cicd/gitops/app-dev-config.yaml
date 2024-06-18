@@ -4,7 +4,7 @@ metadata:
   name: quarkus-getting-started-dev
   namespace: openshift-gitops
   annotations: 
-    argocd-image-updater.argoproj.io/image-list: quay.io/rh-ee-amiralle/quarkus-getting-started
+    argocd-image-updater.argoproj.io/image-list: "quay.io/rh-ee-amiralle/quarkus-getting-started"
 spec:
   destination:
     namespace: test
