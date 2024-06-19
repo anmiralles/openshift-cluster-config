@@ -23,7 +23,14 @@ Step 1: Pipeline deployment
 oc apply -f cicd/pipelines/preview/
 ```
 
-Step 2: Gitops application deployment
+During this step we will deploy a trigger so that when there would be a push event in the git repository the pipeline will be fired.
+
+Step 2: Configure git repository weebhook
+
+![webhook-config](images/webhook.png)
+
+
+Step 3: Gitops application deployment
 
 ```shell script
 oc apply -f cicd/gitops/app-preview-config.yaml
